@@ -60,6 +60,7 @@ class Group(models.Model):
 
 
 class Student(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, null=True, blank=True, verbose_name="Аккаунт пользователя")
     name = models.CharField(max_length=150, verbose_name="ФИО Студента")
     region = models.ForeignKey(Region, on_delete=models.SET_NULL, null=True, verbose_name="Регион")
     nationality = models.ForeignKey(Nationality, on_delete=models.SET_NULL, null=True, verbose_name="Национальность")

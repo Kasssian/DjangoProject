@@ -1,6 +1,7 @@
 import random
 
 from django.contrib.auth import authenticate, login
+from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from rest_framework import viewsets
 
@@ -8,6 +9,34 @@ from .models import Region, Nationality, Faculty, Specialty, Group, Student, Tea
 from .serializers import (RegionSerializer, NationalitySerializer, FacultySerializer,
                           SpecialtySerializer, GroupSerializer, StudentSerializer,
                           TeacherSerializer, SubjectSerializer, ProgressInStudySerializer, LectureSerializer)
+
+
+def universal_login_view(request):
+    if request.user.is_authenticated:
+        return redirect('students-list')
+
+    if request.method == 'POST':
+        user_param = request.POST.get('username')
+        pass_param = request.POST.get('password')
+
+        user = authenticate(request, username=user_param, password=pass_param)
+
+        if user is not None:
+            # 1. Если это ПРЕПОДАВАТЕЛЬ -> отправляем на 2FA
+            if hasattr(user, 'teacher'):
+                otp = str(random.randint(100000, 999999))
+                request.session['pre_2fa_user_id'] = user.id
+                request.session['2fa_code'] = otp
+                print(f"\n{'=' * 40}\nКОД ДЛЯ ВХОДА ПРЕПОДАВАТЕЛЯ {user.username}: {otp}\n{'=' * 40}\n")
+                return redirect('verify-2fa')
+
+            else:
+                login(request, user)
+                return redirect('students-list')
+        else:
+            return render(request, 'university/login.html', {'error': 'Неверный логин или пароль.'})
+
+    return render(request, 'university/login.html')
 
 
 def teacher_login_view(request):
@@ -77,18 +106,43 @@ def students_page(request):
     return render(request, 'university/students_list.html', context)
 
 
+@login_required(login_url='/login/')
 def progress_page(request):
-    # Достаем все оценки, захватывая связанные таблицы (Студент и Предмет)
-    all_progress = ProgressInStudy.objects.select_related('student', 'subject').all()
-    context = {'progresses': all_progress}
-    return render(request, 'university/progress_list.html', context)
+    user = request.user
+
+    if user.is_superuser:
+        progresses = ProgressInStudy.objects.select_related('student', 'subject').all()
+
+    elif hasattr(user, 'teacher'):
+        teacher_subjects = Lecture.objects.filter(teacher=user.teacher).values_list('subject', flat=True)
+        progresses = ProgressInStudy.objects.filter(subject__in=teacher_subjects).select_related('student', 'subject')
+
+    elif hasattr(user, 'student'):
+        progresses = ProgressInStudy.objects.filter(student=user.student).select_related('subject')
+
+    else:
+        progresses = []
+
+    return render(request, 'university/progress_list.html', {'progresses': progresses})
 
 
+@login_required(login_url='/login/')
 def lectures_page(request):
-    # Достаем все лекции, захватывая Предмет, Группу и Преподавателя
-    all_lectures = Lecture.objects.select_related('subject', 'group', 'teacher').all()
-    context = {'lectures': all_lectures}
-    return render(request, 'university/lectures_list.html', context)
+    user = request.user
+
+    if user.is_superuser:
+        lectures = Lecture.objects.select_related('subject', 'group', 'teacher').all()
+
+    elif hasattr(user, 'teacher'):
+        lectures = Lecture.objects.filter(teacher=user.teacher).select_related('subject', 'group')
+
+    elif hasattr(user, 'student'):
+        lectures = Lecture.objects.filter(group=user.student.group).select_related('subject', 'teacher')
+
+    else:
+        lectures = []
+
+    return render(request, 'university/lectures_list.html', {'lectures': lectures})
 
 
 class RegionViewSet(viewsets.ModelViewSet):
