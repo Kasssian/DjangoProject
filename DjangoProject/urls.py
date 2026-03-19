@@ -17,7 +17,8 @@ Including another URLconf
 from django.contrib import admin
 from django.urls import path
 
-from university.views import students_page, progress_page, lectures_page, teacher_login_view, verify_2fa_view
+from university.views import students_page, progress_page, lectures_page, teacher_login_view, verify_2fa_view, \
+    edit_grade_view
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -26,4 +27,5 @@ urlpatterns = [
     path('lectures/', lectures_page, name='lectures-list'),
     path('login/', teacher_login_view, name='teacher-login'),
     path('verify-2fa/', verify_2fa_view, name='verify-2fa'),
+    path('progress/edit/<int:pk>/', edit_grade_view, name='edit-grade'),
 ]

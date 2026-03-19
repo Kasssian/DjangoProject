@@ -19,7 +19,11 @@
                 <td>{{ progress.student.name }}</td>
                 <td>{{ progress.subject.name }}</td>
                 <td>{{ progress.term }}</td>
-                <td><strong>{{ progress.prize }}</strong></td>
+                <td><strong>{{ progress.prize }}</strong>
+                    {% if request.user.teacher or request.user.is_superuser %}
+                        <a href="{% url 'edit-grade' progress.id %}" class="btn btn-sm btn-outline-primary ms-3">✏️
+                            Изменить</a>
+                    {% endif %}</td>
             </tr>
             {% empty %}
             <tr>

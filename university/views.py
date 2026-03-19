@@ -2,6 +2,7 @@ import random
 
 from django.contrib.auth import authenticate, login
 from django.contrib.auth.decorators import login_required
+from django.shortcuts import get_object_or_404
 from django.shortcuts import render, redirect
 from rest_framework import viewsets
 
@@ -10,6 +11,21 @@ from .serializers import (RegionSerializer, NationalitySerializer, FacultySerial
                           SpecialtySerializer, GroupSerializer, StudentSerializer,
                           TeacherSerializer, SubjectSerializer, ProgressInStudySerializer, LectureSerializer)
 
+
+@login_required(login_url='/login/')
+def edit_grade_view(request, pk):
+    if not (hasattr(request.user, 'teacher') or request.user.is_superuser):
+        return redirect('progress-list')
+
+    progress = get_object_or_404(ProgressInStudy, pk=pk)
+
+    if request.method == 'POST':
+        new_prize = request.POST.get('prize')
+        progress.prize = new_prize  # Меняем значение
+        progress.save()  # Сохраняем в базу данных
+        return redirect('progress-list')  # Возвращаем обратно к таблице
+
+    return render(request, 'university/edit_grade.html', {'progress': progress})
 
 def universal_login_view(request):
     if request.user.is_authenticated:
@@ -22,7 +38,6 @@ def universal_login_view(request):
         user = authenticate(request, username=user_param, password=pass_param)
 
         if user is not None:
-            # 1. Если это ПРЕПОДАВАТЕЛЬ -> отправляем на 2FA
             if hasattr(user, 'teacher'):
                 otp = str(random.randint(100000, 999999))
                 request.session['pre_2fa_user_id'] = user.id
@@ -39,38 +54,35 @@ def universal_login_view(request):
     return render(request, 'university/login.html')
 
 
-def teacher_login_view(request):
+def teacher_login_view(request):  # Оставил старое название, чтобы не пришлось менять urls.py
+    # Если пользователь уже вошел, сразу кидаем его на страницу успеваемости
+    if request.user.is_authenticated:
+        return redirect('progress-list')
+
     if request.method == 'POST':
         user_param = request.POST.get('username')
         pass_param = request.POST.get('password')
 
-        # Шаг 1: Проверяем логин и пароль (здесь под капотом работает хеширование Argon2/bcrypt)
         user = authenticate(request, username=user_param, password=pass_param)
 
         if user is not None:
-            # Проверяем, является ли этот пользователь преподавателем
             if hasattr(user, 'teacher'):
-                # Генерируем 6-значный код
                 otp = str(random.randint(100000, 999999))
-
-                # Сохраняем ID пользователя и код во временной сессии
                 request.session['pre_2fa_user_id'] = user.id
                 request.session['2fa_code'] = otp
-
-                # СИМУЛЯЦИЯ ОТПРАВКИ: Выводим код в консоль
-                print(f"\n{'=' * 40}\nКОД ДЛЯ ВХОДА ПРЕПОДАВАТЕЛЯ {user.username}: {otp}\n{'=' * 40}\n")
-
+                print(f"\n{'=' * 40}\nКОД ДЛЯ ВХОДА ПРЕПОДАВАТЕЛЯ: {otp}\n{'=' * 40}\n")
                 return redirect('verify-2fa')
+
             else:
-                return render(request, 'university/login.html', {'error': 'Этот аккаунт не принадлежит преподавателю.'})
+                login(request, user)
+                next_url = request.GET.get('next', 'progress-list')
+                return redirect(next_url)
         else:
             return render(request, 'university/login.html', {'error': 'Неверный логин или пароль.'})
 
     return render(request, 'university/login.html')
 
-
 def verify_2fa_view(request):
-    # Проверяем, прошел ли человек первый этап (ввод пароля)
     if 'pre_2fa_user_id' not in request.session:
         return redirect('teacher-login')
 
