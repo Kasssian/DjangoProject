@@ -1,0 +1,29 @@
+{% extends 'university/base.html' %}
+
+{% block content %}
+    <h2>Распределение лекций</h2>
+    <hr>
+    
+    <table class="table table-striped">
+        <thead class="table-dark">
+            <tr>
+                <th>Предмет</th>
+                <th>Группа</th>
+                <th>Преподаватель</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for lecture in lectures %}
+            <tr>
+                <td>{{ lecture.subject.name }}</td>
+                <td>{{ lecture.group.name }}</td>
+                <td>{{ lecture.teacher.name }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3" class="text-center">Расписание пока не составлено.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

@@ -1,0 +1,31 @@
+{% extends 'university/base.html' %}
+
+{% block content %}
+    <h2>Ведомость успеваемости</h2>
+    <hr>
+    
+    <table class="table table-bordered table-hover">
+        <thead class="table-light">
+            <tr>
+                <th>Студент</th>
+                <th>Предмет</th>
+                <th>Семестр</th>
+                <th>Оценка / Награда</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for progress in progresses %}
+            <tr>
+                <td>{{ progress.student.name }}</td>
+                <td>{{ progress.subject.name }}</td>
+                <td>{{ progress.term }}</td>
+                <td><strong>{{ progress.prize }}</strong></td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="4" class="text-center">Данных об успеваемости пока нет.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

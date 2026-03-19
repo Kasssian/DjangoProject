@@ -1,0 +1,29 @@
+{% extends 'university/base.html' %}
+
+{% block content %}
+    <h2>Список студентов</h2>
+    <hr>
+    
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th>ФИО Студента</th>
+                <th>Группа</th>
+                <th>Регион</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in students %}
+            <tr>
+                <td>{{ student.name }}</td>
+                <td>{{ student.group.name }}</td>
+                <td>{{ student.region.name|default:"Не указан" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="3">Студентов пока нет.</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+{% endblock %}

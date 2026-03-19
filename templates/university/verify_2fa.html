@@ -1,0 +1,22 @@
+{% extends 'university/base.html' %}
+
+{% block content %}
+<div class="row justify-content-center mt-5">
+    <div class="col-md-4 text-center">
+        <h3>Двухфакторная аутентификация</h3>
+        <p class="text-muted">Введите 6-значный код, который мы отправили вам (см. консоль сервера).</p>
+        <hr>
+        {% if error %}
+            <div class="alert alert-danger">{{ error }}</div>
+        {% endif %}
+        
+        <form method="POST">
+            {% csrf_token %}
+            <div class="mb-3">
+                <input type="text" name="otp_code" class="form-control text-center" placeholder="000000" maxlength="6" required>
+            </div>
+            <button type="submit" class="btn btn-success w-100">Подтвердить</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
